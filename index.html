@@ -59,6 +59,31 @@
   .tag-g{color:var(--good); font-weight:700} .tag-f{color:var(--bad); font-weight:700}
   .emoji{font-size:2.4rem}
   [hidden]{display:none!important}
+
+  /* animaties */
+  #confetti{position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:10}
+  .anim-laag{position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:5}
+  .anim-laag span{position:absolute; font-size:2.4rem; line-height:1; will-change:transform}
+  .anim-laag span.loop{left:0; animation:loop linear forwards}
+  .anim-laag span.regen{top:0; animation:regen linear forwards}
+  @keyframes loop{
+    from{transform:translateX(-90px) rotate(-8deg)}
+    50%{transform:translateX(50vw) translateY(-14px) rotate(8deg)}
+    to{transform:translateX(calc(100vw + 90px)) rotate(-8deg)}
+  }
+  @keyframes regen{
+    from{transform:translateY(-70px) rotate(0deg)}
+    to{transform:translateY(calc(100vh + 70px)) rotate(360deg)}
+  }
+  .schud{animation:schud .5s}
+  @keyframes schud{
+    0%,100%{transform:translateX(0)} 15%{transform:translateX(-9px)} 30%{transform:translateX(8px)}
+    45%{transform:translateX(-6px)} 60%{transform:translateX(5px)} 75%{transform:translateX(-3px)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .schud{animation:none}
+    .bar>div{transition:none}
+  }
 </style>
 </head>
 <body>
@@ -76,77 +101,92 @@ const VRAGEN = [
   {
     vraag: "Welke gitarist heeft naast zijn rockcarrière ook een doctoraat in de astrofysica?",
     opties: ["Slash", "Brian May (Queen)", "Jimmy Page", "Tom Morello"], juist: 1,
-    grapje: "Hij speelt solo's én berekent de baan van stofwolken. Jouw hobby's voelen ineens klein."
+    grapje: "Hij speelt solo's én berekent de baan van stofwolken. Jouw hobby's voelen ineens klein.",
+    anim: { emoji: ["🎸","🔭","⭐"], stijl: "loop" }
   },
   {
     vraag: "Welk land heeft de meeste tijdzones (door overzeese gebieden)?",
     opties: ["Rusland", "Verenigde Staten", "Frankrijk", "China"], juist: 2,
-    grapje: "Frankrijk: twaalf tijdzones, en toch is iedereen overal te laat voor de lunch."
+    grapje: "Frankrijk: twaalf tijdzones, en toch is iedereen overal te laat voor de lunch.",
+    anim: { emoji: ["🥖","🕐","🌍"], stijl: "loop" }
   },
   {
     vraag: "Hoeveel centimeter kan de Eiffeltoren in de zomer groeien door de hitte?",
     opties: ["1 cm", "15 cm", "50 cm", "1 meter"], juist: 1,
-    grapje: "Metaal zet uit in de warmte. Net als wij na de derde bitterbal."
+    grapje: "Metaal zet uit in de warmte. Net als wij na de derde bitterbal.",
+    anim: { emoji: ["🗼","☀️"], stijl: "loop" }
   },
   {
     vraag: "In welke stad zou de stroopwafel zijn bedacht?",
     opties: ["Gouda", "Utrecht", "Leiden", "Delft"], juist: 0,
-    grapje: "Gouda is dus meer dan kaas. Het is ook het bewijs dat een bakker ooit zijn restjes heeft gered."
+    grapje: "Gouda is dus meer dan kaas. Het is ook het bewijs dat een bakker ooit zijn restjes heeft gered.",
+    anim: { emoji: ["🧇","🧇"], stijl: "loop" }
   },
   {
     vraag: "Hoeveel traptreden telt de Domtoren?",
     opties: ["265", "465", "665", "112"], juist: 1,
-    grapje: "465 treden. Het uitzicht is mooi, je kuiten zijn het daar niet helemaal mee eens."
+    grapje: "465 treden. Het uitzicht is mooi, je kuiten zijn het daar niet helemaal mee eens.",
+    anim: { emoji: ["⛪","👟"], stijl: "loop" }
   },
   {
     vraag: "In Ariely's Economist-experiment kostte \"alleen online\" $59, \"alleen print\" $125 en \"online + print\" óók $125. Wat koos de meerderheid?",
     opties: ["Alleen online", "Alleen print", "Online + print", "Niemand nam een abonnement"], juist: 2,
-    grapje: "Niemand koos print-only. Die optie bestond alleen om de andere twee er slim uit te laten zien."
+    grapje: "Niemand koos print-only. Die optie bestond alleen om de andere twee er slim uit te laten zien.",
+    anim: { emoji: ["📰","💻"], stijl: "loop" }
   },
   {
     vraag: "Hoeveel van je energie verbruikt je brein?",
     opties: ["2%", "20%", "50%", "80%"], juist: 1,
-    grapje: "20% van je energie voor 2% van je gewicht. Dit is dus ook waarom je na een quiz honger hebt."
+    grapje: "20% van je energie voor 2% van je gewicht. Dit is dus ook waarom je na een quiz honger hebt.",
+    anim: { emoji: ["🧠","⚡"], stijl: "loop" }
   },
   {
     vraag: "Hoe heet de angst voor lange woorden?",
     opties: ["Arachibutyrofobie", "Nomofobie", "Xenofobie", "Hippopotomonstrosesquippedaliofobie"], juist: 3,
-    grapje: "Ja, het woord is zelf het probleem. Iemand had humor, of een heel slecht geweten."
+    grapje: "Ja, het woord is zelf het probleem. Iemand had humor, of een heel slecht geweten.",
+    anim: { emoji: ["🦛","📖"], stijl: "loop" }
   },
   {
     vraag: "In welk jaar was de laatste Elfstedentocht?",
     opties: ["1985", "1963", "1997", "2005"], juist: 2,
-    grapje: "1997. Sindsdien kijkt heel Nederland elke winter naar de lucht als een teleurgestelde boer."
+    grapje: "1997. Sindsdien kijkt heel Nederland elke winter naar de lucht als een teleurgestelde boer.",
+    anim: { emoji: ["⛸️","❄️"], stijl: "loop" }
   },
   {
     vraag: "Kopi luwak, een van de duurste koffies ter wereld, is koffie die eerst door de darmen van welk dier is gegaan?",
     opties: ["Civetkat", "Kameel", "Papegaai", "Pinguïn"], juist: 0,
-    grapje: "Luxe is soms gewoon iets dat een dier al eens heeft verwerkt."
+    grapje: "Luxe is soms gewoon iets dat een dier al eens heeft verwerkt.",
+    anim: { emoji: ["☕","🐈"], stijl: "loop" }
   },
   {
     vraag: "Hoeveel harten heeft een octopus?",
     opties: ["1", "2", "3", "8"], juist: 2,
-    grapje: "Drie harten en nog steeds geen relatie. Dat zegt iets over relaties."
+    grapje: "Drie harten en nog steeds geen relatie. Dat zegt iets over relaties.",
+    anim: { emoji: ["🐙"], stijl: "regen" }
   },
   {
     vraag: "Hoe noemen ze een oliebol in Vlaanderen?",
     opties: ["Smoutebol", "Frietbol", "Vetkluit", "Boterbal"], juist: 0,
-    grapje: "Smout is reuzenvet. Het klinkt al gezond, en dat is precies de bedoeling."
+    grapje: "Smout is reuzenvet. Het klinkt al gezond, en dat is precies de bedoeling.",
+    anim: { emoji: ["🍩","🍩"], stijl: "loop" }
   },
   {
     vraag: "Hoeveel fietsen passen in de grootste fietsenstalling ter wereld bij Utrecht Centraal?",
     opties: ["2.500", "12.500", "50.000", "125.000"], juist: 1,
-    grapje: "12.500 plekken. Jouw fiets staat er natuurlijk op de verste plek."
+    grapje: "12.500 plekken. Jouw fiets staat er natuurlijk op de verste plek.",
+    anim: { emoji: ["🚲","🚲"], stijl: "loop" }
   },
   {
     vraag: "Waar staat \"Wi-Fi\" officieel voor?",
     opties: ["Wireless Fidelity", "Wide Fidelity", "Wireless Finder", "Nergens voor, het is een verzonnen merknaam"], juist: 3,
-    grapje: "Het stond voor niets. Net als de meeste vergaderingen, maar dit werkt tenminste."
+    grapje: "Het stond voor niets. Net als de meeste vergaderingen, maar dit werkt tenminste.",
+    anim: { emoji: ["📶","💡"], stijl: "loop" }
   },
   {
     vraag: "Welke van deze is botanisch gezien een bes?",
     opties: ["Aardbei", "Framboos", "Banaan", "Kers"], juist: 2,
-    grapje: "Een banaan is een bes en een aardbei niet. De botanie heeft vermoedelijk een grap gemaakt."
+    grapje: "Een banaan is een bes en een aardbei niet. De botanie heeft vermoedelijk een grap gemaakt.",
+    anim: { emoji: ["🍌","🍌"], stijl: "loop" }
   }
 ];
 
@@ -193,6 +233,80 @@ function tijdstip(d){
   return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 function titelVoor(score){ return TITELS.find(t => score >= t[0] && score <= t[1]); }
+
+/* ============ ANIMATIES ============ */
+const REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+const KLEUREN = ["#ff5d8f", "#5b4bff", "#ffc233", "#1fa971", "#2bb8ff", "#ff8a3d"];
+let cCanvas = null, cDeeltjes = [], cBezig = false;
+
+function confetti(x, y, aantal){
+  if (REDUCED) return;
+  if (!cCanvas){
+    cCanvas = el("canvas", {id:"confetti", "aria-hidden":"true"});
+    document.body.append(cCanvas);
+  }
+  const dpr = window.devicePixelRatio || 1;
+  if (cCanvas.width !== Math.round(innerWidth * dpr) || cCanvas.height !== Math.round(innerHeight * dpr)){
+    cCanvas.width = Math.round(innerWidth * dpr); cCanvas.height = Math.round(innerHeight * dpr);
+  }
+  for (let i = 0; i < (aantal || 60); i++){
+    const hoek = (-150 + Math.random() * 120) * Math.PI / 180; // omhoog gericht
+    const snelheid = 6 + Math.random() * 9;
+    cDeeltjes.push({
+      x, y, vx: Math.cos(hoek) * snelheid, vy: Math.sin(hoek) * snelheid,
+      rot: Math.random() * 6.28, vr: (Math.random() - .5) * .4,
+      w: 6 + Math.random() * 6, h: 4 + Math.random() * 5,
+      kleur: KLEUREN[Math.floor(Math.random() * KLEUREN.length)]
+    });
+  }
+  if (!cBezig){ cBezig = true; requestAnimationFrame(confettiFrame); }
+}
+function confettiFrame(){
+  const ctx = cCanvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, innerWidth, innerHeight);
+  cDeeltjes = cDeeltjes.filter(d => d.y < innerHeight + 30);
+  for (const d of cDeeltjes){
+    d.vy += 0.28; d.vx *= 0.99; d.vy *= 0.99;
+    d.x += d.vx; d.y += d.vy; d.rot += d.vr;
+    ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.rot);
+    ctx.fillStyle = d.kleur; ctx.fillRect(-d.w / 2, -d.h / 2, d.w, d.h); ctx.restore();
+  }
+  if (cDeeltjes.length) requestAnimationFrame(confettiFrame);
+  else { cBezig = false; ctx.clearRect(0, 0, innerWidth, innerHeight); }
+}
+function feest(){
+  // grote uitbarsting voor een perfecte score
+  if (REDUCED) return;
+  for (let i = 0; i < 10; i++)
+    setTimeout(() => confetti(innerWidth * (0.1 + Math.random() * 0.8), innerHeight * 0.75, 60), i * 350);
+}
+
+let animTimer = null;
+function vraagAnim(a){
+  if (REDUCED || !a) return;
+  document.querySelectorAll(".anim-laag").forEach(n => n.remove());
+  clearTimeout(animTimer);
+  const laag = el("div", {class:"anim-laag", "aria-hidden":"true"});
+  const regen = a.stijl === "regen";
+  const aantal = regen ? 18 : 6;
+  for (let i = 0; i < aantal; i++){
+    const s = el("span", {class: regen ? "regen" : "loop"}, a.emoji[i % a.emoji.length]);
+    if (regen){
+      s.style.left = (Math.random() * 92) + "%";
+      s.style.animationDuration = (2.8 + Math.random() * 2.2) + "s";
+      s.style.animationDelay = (Math.random() * 1.6) + "s";
+    } else {
+      s.style.top = (8 + Math.random() * 78) + "%";
+      s.style.animationDuration = (3.6 + Math.random() * 2) + "s";
+      s.style.animationDelay = (i * 0.4) + "s";
+    }
+    laag.append(s);
+  }
+  document.body.append(laag);
+  animTimer = setTimeout(() => laag.remove(), 8000);
+}
 
 /* ============ SCHERM 1: WACHTWOORD ============ */
 function toonWachtwoord(){
@@ -287,6 +401,14 @@ function toonVraag(){
       el("div", {style:"margin-top:6px"}, v.grapje)
     );
     fb.hidden = false; volgende.hidden = false;
+    const gekozen = knoppen.find(b => Number(b.getAttribute("data-i")) === oi);
+    if (goed){
+      const r = gekozen.getBoundingClientRect();
+      confetti(r.left + r.width / 2, r.top + r.height / 2, 70);
+    } else if (!REDUCED){
+      gekozen.classList.add("schud");
+    }
+    vraagAnim(v.anim);
     volgende.focus();
   }
   render(
@@ -337,7 +459,9 @@ async function rondAf(){
   LS.set(K_DONE, res);          // direct vastleggen: niet opnieuw te spelen
   LS.del(K_PROGRESS);
   LS.set(K_PENDING, res);       // pas weg na bevestigd versturen
+  document.querySelectorAll(".anim-laag").forEach(n => n.remove());
   toonEind(res);
+  if (res.score === VRAGEN.length) feest();
   await probeerVersturen(res);
 }
 
