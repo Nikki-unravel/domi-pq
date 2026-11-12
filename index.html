@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pubquiz</title>
+<style>
+  :root{
+    --bg:#fff4d6; --card:#ffffff; --ink:#2b2140; --muted:#6d6385;
+    --accent:#ff5d8f; --accent2:#5b4bff; --good:#1fa971; --bad:#e5484d; --line:#e8dfc4;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); min-height:100vh;
+    display:flex; justify-content:center; padding:16px;
+    background-image:radial-gradient(circle at 10% 0%,#ffd9e6 0,transparent 40%),radial-gradient(circle at 100% 100%,#d9d4ff 0,transparent 40%);
+  }
+  main{width:100%; max-width:520px; margin:auto 0}
+  .card{background:var(--card); border:3px solid var(--ink); border-radius:20px; padding:22px; box-shadow:6px 6px 0 var(--ink)}
+  h1{margin:0 0 8px; font-size:1.9rem; line-height:1.15}
+  h2{margin:0 0 14px; font-size:1.25rem; line-height:1.3}
+  p{line-height:1.5}
+  .muted{color:var(--muted); font-size:.95rem}
+  input[type=password],input[type=text]{
+    width:100%; font:inherit; font-size:1.05rem; padding:12px 14px; margin:10px 0;
+    border:3px solid var(--ink); border-radius:14px; background:#fffdf6;
+  }
+  input:focus{outline:3px solid var(--accent2)}
+  button{
+    font:inherit; font-weight:700; font-size:1.05rem; cursor:pointer; width:100%;
+    padding:13px 16px; margin-top:8px; border:3px solid var(--ink); border-radius:14px;
+    background:var(--accent); color:#fff; box-shadow:3px 3px 0 var(--ink);
+  }
+  button:active{transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink)}
+  button.alt{background:#fff; color:var(--ink)}
+  button:disabled{opacity:.6; cursor:default}
+  .err{color:var(--bad); font-weight:700; min-height:1.4em; margin:4px 0 0}
+  .progress{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-weight:700}
+  .bar{height:10px; background:var(--line); border-radius:99px; overflow:hidden; margin-bottom:16px; border:2px solid var(--ink)}
+  .bar>div{height:100%; background:var(--accent2); transition:width .3s}
+  .opt{
+    display:block; text-align:left; background:#fff; color:var(--ink); box-shadow:3px 3px 0 var(--ink);
+    margin:10px 0; font-weight:600;
+  }
+  .opt.goed{background:var(--good); color:#fff}
+  .opt.fout{background:var(--bad); color:#fff}
+  .opt.dim{opacity:.55}
+  .feedback{margin-top:14px; padding:14px; border-radius:14px; border:3px dashed var(--ink); background:#fffdf6}
+  .feedback strong.g{color:var(--good)} .feedback strong.f{color:var(--bad)}
+  .banner{padding:12px 14px; border-radius:14px; border:3px solid var(--ink); margin-bottom:14px; font-weight:700}
+  .banner.ok{background:#c8f2de} .banner.warn{background:#ffe2a8} .banner.bad{background:#ffc9cb}
+  .score{font-size:3rem; font-weight:900; color:var(--accent2); margin:4px 0}
+  .titel{font-size:1.2rem; font-weight:700; margin-bottom:12px}
+  ol.overzicht{padding-left:20px; margin:12px 0}
+  ol.overzicht li{margin:10px 0; line-height:1.35}
+  .v{font-weight:700}
+  .tag-g{color:var(--good); font-weight:700} .tag-f{color:var(--bad); font-weight:700}
+  .emoji{font-size:2.4rem}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main><div id="app" class="card" aria-live="polite"></div></main>
+
+<script>
+/* ============ INSTELLINGEN ============ */
+// SHA-256 van het wachtwoord (hex). Opnieuw genereren: zie README / hash.js.
+const WACHTWOORD_HASH = "c8800eacf37dec99b0ae408449211a4f103f1cc57beac17d7e0277a7a1ca0245";
+// URL van de uitgerolde Google Apps Script-webapp (eindigt op /exec).
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgIJs4XYX3NO2jIxxC_Kv_qVjdOWoSgq__-JCZIp4RfyEENGwpKGB0guEqr4CdNYUHsQ/exec";
+
+/* ============ VRAGEN ============ */
+const VRAGEN = [
+  {
+    vraag: "Welke gitarist heeft naast zijn rockcarrière ook een doctoraat in de astrofysica?",
+    opties: ["Slash", "Brian May (Queen)", "Jimmy Page", "Tom Morello"], juist: 1,
+    grapje: "Hij speelt solo's én berekent de baan van stofwolken. Jouw hobby's voelen ineens klein."
+  },
+  {
+    vraag: "Welk land heeft de meeste tijdzones (door overzeese gebieden)?",
+    opties: ["Rusland", "Verenigde Staten", "Frankrijk", "China"], juist: 2,
+    grapje: "Frankrijk: twaalf tijdzones, en toch is iedereen overal te laat voor de lunch."
+  },
+  {
+    vraag: "Hoeveel centimeter kan de Eiffeltoren in de zomer groeien door de hitte?",
+    opties: ["1 cm", "15 cm", "50 cm", "1 meter"], juist: 1,
+    grapje: "Metaal zet uit in de warmte. Net als wij na de derde bitterbal."
+  },
+  {
+    vraag: "In welke stad zou de stroopwafel zijn bedacht?",
+    opties: ["Gouda", "Utrecht", "Leiden", "Delft"], juist: 0,
+    grapje: "Gouda is dus meer dan kaas. Het is ook het bewijs dat een bakker ooit zijn restjes heeft gered."
+  },
+  {
+    vraag: "Hoeveel traptreden telt de Domtoren?",
+    opties: ["265", "465", "665", "112"], juist: 1,
+    grapje: "465 treden. Het uitzicht is mooi, je kuiten zijn het daar niet helemaal mee eens."
+  },
+  {
+    vraag: "In Ariely's Economist-experiment kostte \"alleen online\" $59, \"alleen print\" $125 en \"online + print\" óók $125. Wat koos de meerderheid?",
+    opties: ["Alleen online", "Alleen print", "Online + print", "Niemand nam een abonnement"], juist: 2,
+    grapje: "Niemand koos print-only. Die optie bestond alleen om de andere twee er slim uit te laten zien."
+  },
+  {
+    vraag: "Hoeveel van je energie verbruikt je brein?",
+    opties: ["2%", "20%", "50%", "80%"], juist: 1,
+    grapje: "20% van je energie voor 2% van je gewicht. Dit is dus ook waarom je na een quiz honger hebt."
+  },
+  {
+    vraag: "Hoe heet de angst voor lange woorden?",
+    opties: ["Arachibutyrofobie", "Nomofobie", "Xenofobie", "Hippopotomonstrosesquippedaliofobie"], juist: 3,
+    grapje: "Ja, het woord is zelf het probleem. Iemand had humor, of een heel slecht geweten."
+  },
+  {
+    vraag: "In welk jaar was de laatste Elfstedentocht?",
+    opties: ["1985", "1963", "1997", "2005"], juist: 2,
+    grapje: "1997. Sindsdien kijkt heel Nederland elke winter naar de lucht als een teleurgestelde boer."
+  },
+  {
+    vraag: "Kopi luwak, een van de duurste koffies ter wereld, is koffie die eerst door de darmen van welk dier is gegaan?",
+    opties: ["Civetkat", "Kameel", "Papegaai", "Pinguïn"], juist: 0,
+    grapje: "Luxe is soms gewoon iets dat een dier al eens heeft verwerkt."
+  },
+  {
+    vraag: "Hoeveel harten heeft een octopus?",
+    opties: ["1", "2", "3", "8"], juist: 2,
+    grapje: "Drie harten en nog steeds geen relatie. Dat zegt iets over relaties."
+  },
+  {
+    vraag: "Hoe noemen ze een oliebol in Vlaanderen?",
+    opties: ["Smoutebol", "Frietbol", "Vetkluit", "Boterbal"], juist: 0,
+    grapje: "Smout is reuzenvet. Het klinkt al gezond, en dat is precies de bedoeling."
+  },
+  {
+    vraag: "Hoeveel fietsen passen in de grootste fietsenstalling ter wereld bij Utrecht Centraal?",
+    opties: ["2.500", "12.500", "50.000", "125.000"], juist: 1,
+    grapje: "12.500 plekken. Jouw fiets staat er natuurlijk op de verste plek."
+  },
+  {
+    vraag: "Waar staat \"Wi-Fi\" officieel voor?",
+    opties: ["Wireless Fidelity", "Wide Fidelity", "Wireless Finder", "Nergens voor, het is een verzonnen merknaam"], juist: 3,
+    grapje: "Het stond voor niets. Net als de meeste vergaderingen, maar dit werkt tenminste."
+  },
+  {
+    vraag: "Welke van deze is botanisch gezien een bes?",
+    opties: ["Aardbei", "Framboos", "Banaan", "Kers"], juist: 2,
+    grapje: "Een banaan is een bes en een aardbei niet. De botanie heeft vermoedelijk een grap gemaakt."
+  }
+];
+
+const TITELS = [
+  [0, 4, "Pubquiz-toerist 🧳", "Je was er in ieder geval bij. Dat is ook iets."],
+  [5, 8, "Bijna-bargenie 🍺", "Net genoeg om mee te praten, niet genoeg om te winnen."],
+  [9, 12, "Kroegkenner 🧠", "Je weet verdacht veel nutteloze dingen. Een compliment."],
+  [13, 14, "Quizmaster in wording 🎩", "Eén foutje en je bent een legende. Nu alleen nog een hoedje."],
+  [15, 15, "Alwetend orakel 👑", "Volmaakt. Verdacht, ook. Je hebt toch niet gegoogeld?"]
+];
+
+/* ============ HULPFUNCTIES ============ */
+const app = document.getElementById("app");
+const LS = {
+  get(k){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch(e){ return null; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+const K_DONE = "pubquiz_klaar", K_PENDING = "pubquiz_nog_te_versturen", K_PROGRESS = "pubquiz_voortgang";
+
+function el(tag, attrs, ...kids){
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})){
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) if (kid != null) n.append(kid.nodeType ? kid : document.createTextNode(kid));
+  return n;
+}
+function render(...nodes){ app.replaceChildren(...nodes); window.scrollTo(0, 0); }
+function normNaam(s){ return s.toLowerCase().replace(/\s+/g, ""); }
+function shuffle(a){
+  a = a.slice();
+  for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+async function sha256Hex(s){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+function tijdstip(d){
+  const p = n => String(n).padStart(2, "0");
+  return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function titelVoor(score){ return TITELS.find(t => score >= t[0] && score <= t[1]); }
+
+/* ============ SCHERM 1: WACHTWOORD ============ */
+function toonWachtwoord(){
+  const inp = el("input", {type:"password", id:"pw", placeholder:"Wachtwoord", autocomplete:"off"});
+  const err = el("p", {class:"err", id:"pw-err"});
+  const go = async () => {
+    err.textContent = "";
+    let h = "";
+    try { h = await sha256Hex(inp.value); }
+    catch(e){ err.textContent = "Je browser kan dit niet controleren (open de pagina via https)."; return; }
+    if (h === WACHTWOORD_HASH) toonNaam();
+    else { err.textContent = "Dat is niet het wachtwoord. Probeer het nog eens!"; inp.select(); }
+  };
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
+  render(
+    el("div", {class:"emoji"}, "🍻"),
+    el("h1", {}, "Welkom bij de pubquiz!"),
+    el("p", {class:"muted"}, "Vul het wachtwoord in dat je van de quizmaster kreeg."),
+    inp, err,
+    el("button", {id:"pw-go", onclick:go}, "Naar de quiz")
+  );
+  inp.focus();
+}
+
+/* ============ SCHERM 2: NAAM ============ */
+function toonNaam(){
+  const inp = el("input", {type:"text", id:"naam", placeholder:"Jouw naam of teamnaam", maxlength:"30", autocomplete:"off"});
+  const err = el("p", {class:"err", id:"naam-err"});
+  const btn = el("button", {id:"naam-go"}, "Start de quiz");
+  btn.addEventListener("click", async () => {
+    err.textContent = "";
+    const naam = inp.value.trim().replace(/\s+/g, " ");
+    if (!naam){ err.textContent = "Vul eerst een naam in."; return; }
+    if (naam.length > 30){ err.textContent = "Maximaal 30 tekens."; return; }
+    btn.disabled = true; btn.textContent = "Even checken…";
+    try {
+      const r = await fetch(SCRIPT_URL + "?naam=" + encodeURIComponent(naam));
+      const j = await r.json();
+      if (j && j.bestaat){
+        err.textContent = "Deze naam is al gebruikt, kies een andere.";
+        btn.disabled = false; btn.textContent = "Start de quiz"; return;
+      }
+    } catch(e){
+      // Check niet mogelijk: doorgaan; de server controleert nogmaals bij het versturen.
+    }
+    startQuiz(naam);
+  });
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") btn.click(); });
+  render(
+    el("h1", {}, "Hoe heet jij?"),
+    el("p", {class:"muted"}, "Elke naam kan maar één keer meedoen. Kies er een die je herkent op de ranglijst."),
+    inp, err, btn
+  );
+  inp.focus();
+}
+
+/* ============ SCHERM 3: VRAGEN ============ */
+let staat = null; // { naam, volgorde:[[idx...]...], antwoorden:[gekozen opties-index in origineel...] }
+
+function startQuiz(naam){
+  staat = { naam, volgorde: VRAGEN.map(v => shuffle(v.opties.map((_, i) => i))), antwoorden: [] };
+  LS.set(K_PROGRESS, staat);
+  toonVraag();
+}
+
+function toonVraag(){
+  const n = staat.antwoorden.length;
+  if (n >= VRAGEN.length) return rondAf();
+  const v = VRAGEN[n];
+  const order = staat.volgorde[n];
+  let beantwoord = false;
+  const fb = el("div", {class:"feedback", hidden:""});
+  const volgende = el("button", {id:"volgende", hidden:"", onclick: toonVraag},
+    n === VRAGEN.length - 1 ? "Bekijk mijn score" : "Volgende vraag");
+  const knoppen = order.map(oi => el("button", {class:"opt", "data-i":String(oi), onclick: () => kies(oi)}, v.opties[oi]));
+  function kies(oi){
+    if (beantwoord) return;
+    beantwoord = true;
+    staat.antwoorden.push(oi);
+    LS.set(K_PROGRESS, staat);
+    const goed = oi === v.juist;
+    knoppen.forEach(b => {
+      const i = Number(b.getAttribute("data-i"));
+      b.disabled = true;
+      if (i === v.juist) b.classList.add("goed");
+      else if (i === oi) b.classList.add("fout");
+      else b.classList.add("dim");
+    });
+    fb.append(
+      el("strong", {class: goed ? "g" : "f"}, goed ? "Goed! 🎉" : "Helaas, fout. 😬"),
+      el("div", {}, goed ? "" : "Het juiste antwoord: " + v.opties[v.juist]),
+      el("div", {style:"margin-top:6px"}, v.grapje)
+    );
+    fb.hidden = false; volgende.hidden = false;
+    volgende.focus();
+  }
+  render(
+    el("div", {class:"progress"}, el("span", {}, `Vraag ${n + 1} van ${VRAGEN.length}`)),
+    el("div", {class:"bar"}, el("div", {style:`width:${(n / VRAGEN.length) * 100}%`})),
+    el("h2", {}, v.vraag),
+    ...knoppen, fb, volgende
+  );
+}
+
+/* ============ AFRONDEN + VERSTUREN ============ */
+function maakResultaat(){
+  const antwoorden = VRAGEN.map((v, i) => ({
+    vraag: i + 1,
+    gekozen: v.opties[staat.antwoorden[i]],
+    juist: v.opties[v.juist],
+    goed: staat.antwoorden[i] === v.juist
+  }));
+  const score = antwoorden.filter(a => a.goed).length;
+  return { naam: staat.naam, score, antwoorden, tijd: tijdstip(new Date()) };
+}
+
+function payloadVan(res){
+  return {
+    naam: res.naam, score: res.score,
+    antwoorden: res.antwoorden.map(a => `${a.vraag}: ${a.gekozen} (${a.goed ? "goed" : "fout"})`)
+  };
+}
+
+async function verstuur(res){
+  // returns "ok" | "bestaat" | "fout"
+  try {
+    const r = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: {"Content-Type": "text/plain;charset=utf-8"},
+      body: JSON.stringify(payloadVan(res))
+    });
+    const j = await r.json();
+    if (j && j.ok) return "ok";
+    if (j && j.reden === "naam bestaat al") return "bestaat";
+    return "fout";
+  } catch(e){ return "fout"; }
+}
+
+async function rondAf(){
+  const res = maakResultaat();
+  res.status = "bezig";
+  LS.set(K_DONE, res);          // direct vastleggen: niet opnieuw te spelen
+  LS.del(K_PROGRESS);
+  LS.set(K_PENDING, res);       // pas weg na bevestigd versturen
+  toonEind(res);
+  await probeerVersturen(res);
+}
+
+async function probeerVersturen(res){
+  const uitkomst = await verstuur(res);
+  if (uitkomst === "ok"){ res.status = "verstuurd"; LS.del(K_PENDING); }
+  else if (uitkomst === "bestaat"){ res.status = "bestaat"; LS.del(K_PENDING); }
+  else { res.status = "mislukt"; LS.set(K_PENDING, res); }
+  LS.set(K_DONE, res);
+  toonEind(res);
+}
+
+/* ============ EINDSCHERM ============ */
+function kopieerTekst(res){ return `${res.naam} – ${res.score}/${VRAGEN.length} – ${res.tijd}`; }
+
+async function kopieer(res, knop){
+  const tekst = kopieerTekst(res);
+  let gelukt = false;
+  try { await navigator.clipboard.writeText(tekst); gelukt = true; } catch(e){}
+  if (!gelukt){
+    try {
+      const ta = el("textarea", {style:"position:fixed;opacity:0"}); ta.value = tekst;
+      document.body.append(ta); ta.select(); gelukt = document.execCommand("copy"); ta.remove();
+    } catch(e){}
+  }
+  knop.textContent = gelukt ? "Gekopieerd! ✔" : "Kopiëren lukte niet: " + tekst;
+  setTimeout(() => { knop.textContent = "Kopieer mijn resultaat"; }, 2500);
+}
+
+function toonEind(res){
+  const t = titelVoor(res.score);
+  let banner;
+  if (res.status === "verstuurd")
+    banner = el("div", {class:"banner ok", id:"status"}, "✅ Je score is doorgestuurd naar de quizmaster");
+  else if (res.status === "bestaat")
+    banner = el("div", {class:"banner bad", id:"status"}, "⚠️ Je score is niet opgeslagen: deze naam bestond al. Kopieer je resultaat en stuur het zelf naar de quizmaster.");
+  else if (res.status === "mislukt")
+    banner = el("div", {class:"banner warn", id:"status"}, "📡 Versturen is niet gelukt. Je score staat veilig op dit toestel en we proberen het opnieuw als je de pagina weer opent. Kopieer voor de zekerheid je resultaat en stuur het naar de quizmaster.");
+  else
+    banner = el("div", {class:"banner warn", id:"status"}, "⏳ Score wordt verstuurd…");
+
+  const kopieerKnop = el("button", {id:"kopieer", class:"alt"}, "Kopieer mijn resultaat");
+  kopieerKnop.addEventListener("click", () => kopieer(res, kopieerKnop));
+
+  const lijst = el("ol", {class:"overzicht"}, res.antwoorden.map((a, i) =>
+    el("li", {},
+      el("div", {class:"v"}, VRAGEN[i].vraag),
+      el("div", {}, "Jouw antwoord: ", a.gekozen, " ", el("span", {class: a.goed ? "tag-g" : "tag-f"}, a.goed ? "✔" : "✘")),
+      a.goed ? null : el("div", {}, "Goed was: ", a.juist)
+    )));
+
+  render(
+    banner,
+    el("h1", {id:"eind-naam"}, res.naam),
+    el("div", {class:"score", id:"eind-score"}, `${res.score}/${VRAGEN.length}`),
+    el("div", {class:"titel", id:"eind-titel"}, t[2]),
+    el("p", {}, t[3]),
+    kopieerKnop,
+    el("h2", {style:"margin-top:22px"}, "Jouw antwoorden"),
+    lijst
+  );
+}
+
+/* ============ START ============ */
+(async function init(){
+  const klaar = LS.get(K_DONE);
+  if (klaar){
+    toonEind(klaar);
+    const pending = LS.get(K_PENDING);
+    if (pending && (pending.status === "mislukt" || pending.status === "bezig")){
+      probeerVersturen(pending);
+    }
+    return;
+  }
+  // Onderbroken quiz hervatten (naam en eerdere antwoorden staan vast)
+  const voortgang = LS.get(K_PROGRESS);
+  if (voortgang && Array.isArray(voortgang.antwoorden) && voortgang.volgorde && voortgang.volgorde.length === VRAGEN.length){
+    staat = voortgang;
+    toonVraag();
+    return;
+  }
+  toonWachtwoord();
+})();
+</script>
+</body>
+</html>
